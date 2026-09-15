@@ -19,6 +19,11 @@ import { ContextForm } from './components/ContextForm';
 import { DraftAdjustmentsView } from './components/DraftAdjustmentsView';
 import { ActionableNextSteps } from './components/ActionableNextSteps';
 import { SystemDiagramModal } from './components/SystemDiagramModal';
+import {
+  generateRealisticFallbackDraft,
+  refineDraftLocally,
+  generateFinalStepsFallback,
+} from './lib/mentor-fallback';
 
 const INITIAL_CONTEXT: AssistantContext = {
   formats: ['email'],
@@ -63,18 +68,28 @@ export default function App() {
     setAdvice(null);
 
     try {
-      const response = await fetch('/api/generate-draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ctx),
-      });
+      let draftData: any = null;
 
-      if (!response.ok) {
-        throw new Error('Failed to generate letter draft');
+      try {
+        const response = await fetch('/api/generate-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(ctx),
+        });
+
+        if (response.ok) {
+          const res = await response.json();
+          draftData = res.data;
+        } else {
+          console.warn('Backend API returned non-ok status, switching to mentor rule engine');
+        }
+      } catch (networkErr) {
+        console.warn('Network unreachable or serverless cold-start, switching to mentor rule engine:', networkErr);
       }
 
-      const res = await response.json();
-      const draftData = res.data;
+      if (!draftData) {
+        draftData = generateRealisticFallbackDraft(ctx);
+      }
 
       const newIteration: DraftIteration = {
         id: Date.now(),
@@ -111,10 +126,35 @@ export default function App() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/refine-draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let refinedData: any = null;
+
+      try {
+        const response = await fetch('/api/refine-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            previousDraft: currentDraft.body,
+            previousSubject: currentDraft.subject,
+            feedback,
+            formats: context.formats,
+            recipientName: context.recipientName,
+            senderName: context.senderName,
+            relationship: context.relationship,
+          }),
+        });
+
+        if (response.ok) {
+          const res = await response.json();
+          refinedData = res.data;
+        } else {
+          console.warn('Backend refine API returned non-ok status, using local mentor refinement');
+        }
+      } catch (networkErr) {
+        console.warn('Network unreachable, using local mentor refinement:', networkErr);
+      }
+
+      if (!refinedData) {
+        refinedData = refineDraftLocally({
           previousDraft: currentDraft.body,
           previousSubject: currentDraft.subject,
           feedback,
@@ -122,15 +162,9 @@ export default function App() {
           recipientName: context.recipientName,
           senderName: context.senderName,
           relationship: context.relationship,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to refine letter draft');
+          reason: context.reason,
+        });
       }
-
-      const res = await response.json();
-      const refinedData = res.data;
 
       const newVersionNum = draftHistory.length + 1;
       const nextIteration: DraftIteration = {
@@ -167,25 +201,40 @@ export default function App() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/finalize-steps', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          finalDraft: currentDraft.body,
-          situation: context.situation,
-          relationship: context.relationship,
-          formats: context.formats,
-        }),
-      });
+      let finalAdviceData: any = null;
 
-      if (!response.ok) {
-        throw new Error('Failed to generate action steps');
+      try {
+        const response = await fetch('/api/finalize-steps', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            approvedDraft: currentDraft.body,
+            situation: context.situation,
+            relationship: context.relationship,
+            formats: context.formats,
+            recipientName: context.recipientName,
+            senderName: context.senderName,
+          }),
+        });
+
+        if (response.ok) {
+          const res = await response.json();
+          finalAdviceData = res.data;
+        }
+      } catch (networkErr) {
+        console.warn('Backend finalize API unreachable, using local mentor final steps:', networkErr);
       }
 
-      const res = await response.json();
-      setAdvice(res.data);
+      if (!finalAdviceData) {
+        finalAdviceData = generateFinalStepsFallback({
+          relationship: context.relationship,
+        });
+      }
+
+      setAdvice(finalAdviceData);
     } catch (err: any) {
-      console.error('Error fetching final steps:', err);
+      console.error('Error finalizing steps:', err);
+      setAdvice(generateFinalStepsFallback({ relationship: context.relationship }));
     }
   };
 
