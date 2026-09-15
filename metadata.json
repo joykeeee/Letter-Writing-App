@@ -1,0 +1,6 @@
+{
+  "name": "Letter Writing Assistant",
+  "description": "An empathetic peer career advisor and letter writing assistant that helps craft authentic professional communications, track iteration diffs, and guide next steps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

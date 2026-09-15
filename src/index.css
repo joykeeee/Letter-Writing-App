@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header,
+  #system-diagram-modal,
+  #system-diagram-backdrop,
+  #format-selector-section,
+  #letter-context-form,
+  #diff-viewer-container,
+  #peer-advisor-card,
+  #actionable-next-steps-section,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  #letter-preview-card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  #printable-letter-email,
+  #printable-letter-handwritten,
+  #printable-letter-typed {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
