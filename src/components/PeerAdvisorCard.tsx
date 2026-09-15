@@ -211,33 +211,38 @@ export const PeerAdvisorCard: React.FC<PeerAdvisorCardProps> = ({
             </div>
 
             {/* Feedback Input */}
-            <div className="flex items-center gap-2">
-              <input
+            <div className="space-y-2">
+              <textarea
                 id="refine-feedback-input"
-                type="text"
+                rows={3}
                 value={feedbackText}
                 onChange={(e) => setFeedbackText(e.target.value)}
-                placeholder="e.g. Cut the second paragraph in half, and mention I'm free on Friday afternoon"
-                className="flex-1 text-xs px-3 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                placeholder="e.g. Make it warmer and more peer-to-peer. Replace the excuse with an unexpected family matter. Mention that I can do next Tuesday afternoon, and the coffee is on me."
+                className="w-full text-xs px-3 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white leading-relaxed resize-y"
               />
-              <button
-                id="submit-refine-btn"
-                type="submit"
-                disabled={!feedbackText.trim() || isRefining}
-                className="px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {isRefining ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Revising...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Revise & Diff</span>
-                  </>
-                )}
-              </button>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-500">
+                  Requests are organically rewritten into the letter (never tacked on as an afterthought).
+                </span>
+                <button
+                  id="submit-refine-btn"
+                  type="submit"
+                  disabled={!feedbackText.trim() || isRefining}
+                  className="px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors flex items-center gap-2 disabled:opacity-50 shadow-xs"
+                >
+                  {isRefining ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Regenerating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Regenerate Draft & Diff</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         )}

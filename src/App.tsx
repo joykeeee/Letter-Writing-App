@@ -194,6 +194,35 @@ export default function App() {
     }
   };
 
+  const handleDirectEdit = (updatedBody: string, updatedSubject?: string) => {
+    if (!currentDraft) return;
+    const trimmedBody = updatedBody.trim();
+    if (trimmedBody === currentDraft.body.trim() && (updatedSubject || '') === (currentDraft.subject || '')) {
+      return;
+    }
+
+    const newVersionNum = draftHistory.length + 1;
+    const nextIteration: DraftIteration = {
+      id: Date.now(),
+      version: newVersionNum,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      subject: updatedSubject !== undefined ? updatedSubject : currentDraft.subject,
+      body: trimmedBody,
+      reassurance: currentDraft.reassurance,
+      advisorNote: 'Direct manual revisions made by you. All edits are recorded so you can compare differences.',
+      changeSummary: 'Direct edits saved by user',
+      missingInfoFlags: currentDraft.missingInfoFlags,
+      promptQuestion: currentDraft.promptQuestion || 'Is this draft ok?',
+      isUserApproved: false,
+    };
+
+    setPreviousDraft(currentDraft);
+    setCurrentDraft(nextIteration);
+    setDraftHistory((prev) => [...prev, nextIteration]);
+    setIsApproved(false);
+    setAdvice(null);
+  };
+
   const handleApprove = async () => {
     if (!currentDraft) return;
 
@@ -363,6 +392,7 @@ export default function App() {
                 onGenerateInitialDraft={() => generateInitialDraft(context, true)}
                 isLoadingInitial={isLoading}
                 onSelectIteration={handleSelectIteration}
+                onDirectEdit={handleDirectEdit}
               />
             </section>
           )}

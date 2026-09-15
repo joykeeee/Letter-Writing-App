@@ -191,7 +191,7 @@ export async function handleRefineDraft(body: any) {
     } = body;
 
     const prompt = `
-Refine this professional letter draft based on the user's feedback:
+Regenerate and refine this professional letter draft based on the user's specific feedback:
 Current Draft:
 """
 ${previousDraft}
@@ -203,12 +203,14 @@ Sender Name: ${senderName || "[Your Name]"}
 Recipient Name: ${recipientName || "[Name]"}
 Formats: ${formats.join(", ")}
 
-Instructions:
-1. Adjust the draft according to the user's requested tone, length, or phrasing.
-2. Maintain sincere accountability without sounding overly deferential, groveling, or defensive.
-3. Keep the text concise and natural.
-4. Summarize what changes were made in a clear bullet point or short phrase.
-5. End with the question: "Is this draft ok?"
+Strict Instructions:
+1. Regenerate the letter body by organically weaving the user's requested adjustment ("${feedback}") directly into the natural sentences and paragraphs of the letter.
+2. ABSOLUTELY FORBIDDEN: Do NOT append the adjustment at the end of the letter as a note, bracketed tag, footer, or "P.S.". It must be fully integrated into the letter itself.
+3. If the user asks to change names, reasons, meeting types, dates, or tone, update those elements directly in the body and subject.
+4. Maintain sincere accountability without sounding overly deferential, groveling, or defensive.
+5. Keep the text concise, professional, and authentic to the user's voice.
+6. In changeSummary, state clearly what modifications were made.
+7. End promptQuestion with: "Is this draft ok?" (or "Is this email ok?").
 `;
 
     const response = await callGeminiWithFallback(ai, (model) => ({

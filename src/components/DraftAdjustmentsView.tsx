@@ -34,6 +34,7 @@ interface DraftAdjustmentsViewProps {
   onGenerateInitialDraft?: () => void;
   isLoadingInitial?: boolean;
   onSelectIteration: (iteration: DraftIteration) => void;
+  onDirectEdit?: (updatedBody: string, updatedSubject?: string) => void;
 }
 
 export const DraftAdjustmentsView: React.FC<DraftAdjustmentsViewProps> = ({
@@ -51,6 +52,7 @@ export const DraftAdjustmentsView: React.FC<DraftAdjustmentsViewProps> = ({
   onGenerateInitialDraft,
   isLoadingInitial,
   onSelectIteration,
+  onDirectEdit,
 }) => {
   // If no draft has been generated yet
   if (!currentDraft) {
@@ -175,6 +177,7 @@ export const DraftAdjustmentsView: React.FC<DraftAdjustmentsViewProps> = ({
             onSelectFormat={onSelectDisplayFormat}
             recipientName={context.recipientName}
             senderName={context.senderName}
+            onDirectEdit={onDirectEdit}
           />
         </div>
 

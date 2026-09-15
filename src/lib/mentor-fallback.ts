@@ -105,98 +105,181 @@ export function refineDraftLocally(params: any) {
     previousSubject = "Apologies for missing our coffee chat / Rescheduling",
     recipientName = "",
     senderName = "",
+    reason = "",
   } = params || {};
 
-  let body = previousDraft;
+  let body = previousDraft.trim();
   let subject = previousSubject;
-  const feedbackLower = (feedback || "").toLowerCase();
+  const feedbackTrimmed = (feedback || "").trim();
+  const feedbackLower = feedbackTrimmed.toLowerCase();
   const changes: string[] = [];
 
-  // 1. Shorter / Concise
-  if (feedbackLower.includes("short") || feedbackLower.includes("concise") || feedbackLower.includes("brief")) {
-    body = `Hi ${recipientName || "[Name]"},
+  // Extract greeting, paragraphs, and closing
+  const lines = body.split("\n").map(l => l.trim()).filter(Boolean);
+  let greeting = lines[0] || `Hi ${recipientName || "[Name]"},`;
+  let signoff = lines[lines.length - 1] || `${senderName || "[Your Name]"}`;
+  let closingValediction = lines.length > 2 ? lines[lines.length - 2] : "Best regards,";
 
-I am so sorry I missed our chat today. ${params.reason ? params.reason : "An unexpected conflict arose and I wasn't able to give advance notice"}. I deeply respect your time and busy calendar.
+  // 1. Check for Recipient Name changes (e.g., "change recipient to Alex", "call them Dr. Smith", "address to Professor Lee")
+  const recipientMatch = feedbackTrimmed.match(/(?:call (?:them|him|her)|change (?:recipient|name) to|address (?:it |this )?to)\s+([A-Z][a-zA-Z\.\s]+)/i);
+  if (recipientMatch && recipientMatch[1]) {
+    const newName = recipientMatch[1].trim();
+    body = body.replace(/^(?:Hi|Dear|Hello)\s+[^,\n]+,/m, `Hi ${newName},`);
+    changes.push(`Updated recipient greeting to ${newName}`);
+  }
 
-If you are open to rescheduling, I would love to connect whenever convenient—even for a quick 15-minute call.
+  // 2. Check for Sender Name changes (e.g., "my name is Jordan", "sign as Alex")
+  const senderMatch = feedbackTrimmed.match(/(?:my name is|sign (?:as|with|off as))\s+([A-Z][a-zA-Z\s]+)/i);
+  if (senderMatch && senderMatch[1]) {
+    const newSender = senderMatch[1].trim();
+    const lastLine = lines[lines.length - 1];
+    if (lastLine) {
+      body = body.substring(0, body.lastIndexOf(lastLine)) + newSender;
+      changes.push(`Updated sender signature to ${newSender}`);
+    }
+  }
 
-Thanks so much for understanding, and apologies again for the inconvenience.
+  // 3. Shorter / Concise / Brief
+  if (feedbackLower.includes("short") || feedbackLower.includes("concise") || feedbackLower.includes("brief") || feedbackLower.includes("cut in half") || feedbackLower.includes("too long")) {
+    const recName = recipientMatch ? recipientMatch[1].trim() : (recipientName || "[Name]");
+    const sendName = senderMatch ? senderMatch[1].trim() : (senderName || "[Your Name]");
+    const effectiveReason = reason || "an unexpected conflict arose last minute";
+
+    body = `Hi ${recName},
+
+I am so sorry I missed our chat today. Unfortunately, ${effectiveReason} and I wasn't able to reach out beforehand. I deeply respect your time and busy calendar.
+
+If you are open to rescheduling, I would love the chance to connect whenever convenient—even for a quick 15-minute phone or video call.
+
+Thank you so much for understanding, and apologies again for the inconvenience.
 
 Best regards,
-${senderName || "[Your Name]"}`;
-    changes.push("Condensed letter to 3 clear, focused paragraphs");
+${sendName}`;
+    changes.push("Condensed message into a focused, 3-paragraph format");
   }
 
-  // 2. Warmer / Friendly / Casual
-  if (feedbackLower.includes("warm") || feedbackLower.includes("casual") || feedbackLower.includes("friendly") || feedbackLower.includes("less formal")) {
+  // 4. Warmer / Friendly / Casual / Less formal
+  if (feedbackLower.includes("warm") || feedbackLower.includes("casual") || feedbackLower.includes("friendly") || feedbackLower.includes("less formal") || feedbackLower.includes("relax")) {
     body = body
-      .replace(/Dear /g, "Hi ")
-      .replace(/Best regards,/g, "Warmly,")
+      .replace(/^Dear\s+/gm, "Hi ")
       .replace(/Sincerely,/g, "Warmly,")
+      .replace(/Best regards,/g, "Warmly,")
       .replace(/I am writing to sincerely apologize/g, "I'm so sorry")
-      .replace(/I am so sorry/g, "I'm so sorry")
-      .replace(/I would really appreciate the opportunity to/g, "I'd love to");
-    if (!body.includes("really looking forward")) {
-      body = body.replace(
-        /I'm so sorry I was not able to make our coffee chat today\./,
-        "I'm so sorry I missed our coffee chat today! I was really looking forward to catching up and hearing your thoughts."
-      );
-    }
-    changes.push("Softened tone to be warmer and more peer-to-peer");
+      .replace(/I am so sorry I was not able to make our coffee chat today\./g, "I'm so sorry I missed our coffee chat today! I was really looking forward to connecting.")
+      .replace(/I would really appreciate the opportunity to/g, "I'd love the chance to");
+    changes.push("Adjusted tone to be warmer and more peer-to-peer");
   }
 
-  // 3. More formal / Executive / Direct
-  if (feedbackLower.includes("formal") || feedbackLower.includes("executive") || feedbackLower.includes("direct")) {
+  // 5. More formal / Executive / Professional
+  if (feedbackLower.includes("more formal") || feedbackLower.includes("executive") || feedbackLower.includes("professional tone") || feedbackLower.includes("strict")) {
+    const recName = recipientMatch ? recipientMatch[1].trim() : (recipientName || "[Name]");
+    const sendName = senderMatch ? senderMatch[1].trim() : (senderName || "[Your Name]");
     subject = "Sincere apologies for missing our meeting - Rescheduling";
-    body = `Dear ${recipientName || "[Name]"},
+    body = `Dear ${recName},
 
-Please accept my sincere apologies for missing our scheduled coffee chat today. Due to an urgent priority that required my immediate attention, I was unfortunately unable to notify you in advance.
+Please accept my sincere apologies for missing our scheduled meeting today. Due to an unexpected priority that required my immediate attention, I was unfortunately unable to notify you in advance.
 
-I hold the utmost respect for your time and expertise. If your schedule allows in the coming weeks, I would welcome the opportunity to reschedule at your convenience. I am also happy to connect via a brief phone call if that is preferable.
+I hold the utmost respect for your time and schedule. If your availability allows in the coming weeks, I would welcome the opportunity to reschedule at your convenience. I am also very glad to connect via a brief phone call if that is preferable.
 
-Thank you very much for your time and understanding.
+Thank you very much for your time, consideration, and understanding.
 
 Sincerely,
-${senderName || "[Your Name]"}`;
-    changes.push("Adopted a structured, executive tone with formal phrasing");
+${sendName}`;
+    changes.push("Adopted a formal, executive register with structured etiquette");
   }
 
-  // 4. Time proposals
-  if (feedbackLower.includes("tuesday") || feedbackLower.includes("thursday") || feedbackLower.includes("specific day") || feedbackLower.includes("specific time")) {
-    const timeSuggestion = "To make scheduling easy, I am free next Tuesday afternoon (between 1:00 PM – 4:00 PM) or Thursday morning (between 9:00 AM – 11:30 AM), but I am more than happy to work around whatever works best for you.";
-    if (!body.includes("Tuesday")) {
+  // 6. Specific Excuse / Reason adjustments (e.g., family emergency, sick, flight delay, flat tire, work outage)
+  const reasonKeywords = ["emergency", "sick", "doctor", "outage", "flight", "traffic", "car broke", "ill", "deadline", "family"];
+  const matchedReason = reasonKeywords.find(k => feedbackLower.includes(k));
+  if (matchedReason) {
+    let specificReason = "an urgent matter arose";
+    if (feedbackLower.includes("family emergency")) specificReason = "an unexpected family emergency arose";
+    else if (feedbackLower.includes("sick") || feedbackLower.includes("ill")) specificReason = "I suddenly came down with an illness";
+    else if (feedbackLower.includes("doctor")) specificReason = "an urgent medical appointment came up";
+    else if (feedbackLower.includes("outage") || feedbackLower.includes("deadline")) specificReason = "a critical work emergency required my immediate attention";
+    else if (feedbackLower.includes("traffic") || feedbackLower.includes("car")) specificReason = "a severe transit delay prevented me from arriving";
+    else if (feedbackLower.includes("flight")) specificReason = "my travel was delayed unexpectedly";
+
+    body = body.replace(
+      /Unfortunately,[^\.\n]+\./i,
+      `Unfortunately, ${specificReason} and I was unable to send advance notice.`
+    );
+    changes.push(`Updated reason to reference ${matchedReason}`);
+  }
+
+  // 7. Time / Day proposals (e.g. Tuesday, Friday, next week, morning, afternoon)
+  const dayMatch = feedbackLower.match(/(monday|tuesday|wednesday|thursday|friday|next week|tomorrow|this weekend)/i);
+  if (dayMatch) {
+    const day = dayMatch[1];
+    const timeSuggestion = `To make scheduling straightforward, I am open ${day.toLowerCase().includes("next") ? day : `next ${day}`} if that might work, but I am more than happy to work around whatever window fits your schedule best.`;
+
+    if (/reschedule|reconnect|connect/i.test(body) && !body.includes(day)) {
       body = body.replace(
-        /If you are open to it, I would love the opportunity to reschedule[^\n]*/i,
-        `If you are open to rescheduling, I would love the chance to connect. ${timeSuggestion}`
+        /(If you are open to (?:it, )?rescheduling[^\.\n]+\.)/i,
+        `$1 ${timeSuggestion}`
       );
+      changes.push(`Added specific availability window (${day})`);
     }
-    changes.push("Added concrete availability windows (Tuesday/Thursday) to remove scheduling friction");
   }
 
-  // 5. Coffee on me / treat
-  if (feedbackLower.includes("coffee") || feedbackLower.includes("treat") || feedbackLower.includes("buy")) {
-    if (!body.includes("on me")) {
+  // 8. Meeting format change (Lunch, Zoom, Call, Breakfast)
+  if (feedbackLower.includes("lunch") && !body.includes("lunch")) {
+    body = body.replace(/coffee chat/gi, "lunch").replace(/coffee/gi, "lunch");
+    subject = subject.replace(/coffee chat/gi, "lunch");
+    changes.push("Switched meeting format from coffee to lunch");
+  } else if (feedbackLower.includes("zoom") || feedbackLower.includes("video call")) {
+    if (!body.includes("Zoom")) {
       body = body.replace(
-        /Best regards,|Warmly,|Sincerely,/,
-        "The coffee is 100% on me next time!\n\nBest regards,"
+        /If you are open to it,/i,
+        "If you are open to it, I would be delighted to connect over Zoom or in person,"
       );
+      changes.push("Added Zoom / video call option");
     }
-    changes.push("Added courteous note offering to treat for coffee");
   }
 
-  // 6. Generic custom instruction if no standard match
-  if (changes.length === 0) {
-    body = `${body}\n\n[P.S. Note added: ${feedback}]`;
-    changes.push(`Incorporated requested adjustment: "${feedback}"`);
+  // 9. Hospitality / Coffee on me
+  if ((feedbackLower.includes("coffee") || feedbackLower.includes("treat") || feedbackLower.includes("buy")) && !body.includes("on me")) {
+    body = body.replace(
+      /(Thank you so much for your understanding[^\n]*)/i,
+      "The coffee is completely on me next time!\n\n$1"
+    );
+    changes.push("Added courteous offer to buy coffee next time");
   }
 
-  const changeSummary = changes.join("; ");
+  // 10. General / Custom User Request Integration (NEVER tack on P.S.)
+  if (changes.length === 0 && feedbackTrimmed.length > 0) {
+    // Clean up request syntax (e.g. "mention that I...", "say that I...", "please include...")
+    let cleanRequest = feedbackTrimmed
+      .replace(/^(please\s+)?(mention|say|add|tell them|include|state)\s+(that\s+)?/i, "")
+      .trim();
+
+    // Ensure first character is lowercase for mid-sentence integration or uppercase for sentence start
+    if (cleanRequest.length > 0) {
+      const formattedSentence = cleanRequest.charAt(0).toUpperCase() + cleanRequest.slice(1);
+      const endsWithPunctuation = /[.!?]$/.test(formattedSentence) ? formattedSentence : `${formattedSentence}.`;
+
+      // Organically insert before the closing thank-you paragraph
+      if (body.includes("Thank you")) {
+        body = body.replace(
+          /(Thank you[^\n]*)/i,
+          `${endsWithPunctuation}\n\n$1`
+        );
+      } else {
+        // Insert right before sign-off
+        body = body.replace(
+          /(Best regards,|Warmly,|Sincerely,)/i,
+          `${endsWithPunctuation}\n\n$1`
+        );
+      }
+      changes.push(`Organically integrated requested note: "${feedbackTrimmed}"`);
+    }
+  }
+
+  const changeSummary = changes.length > 0 ? changes.join("; ") : "Refined draft to reflect your custom guidance while preserving your voice.";
   const isEmail = !subject.includes("None");
 
   return {
-    advisorNote: `I have updated your draft to incorporate: "${feedback}". ${
-      changes.length > 0 ? changes[0] : "We adjusted the tone while preserving your authentic voice."
-    }`,
+    advisorNote: `I have revised the draft to seamlessly incorporate: "${feedbackTrimmed}". The adjustments are woven directly into the text to maintain an authentic, professional flow.`,
     subject,
     body: body.trim(),
     changeSummary,
